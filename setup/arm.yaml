@@ -140,7 +140,7 @@ COMPLETED_PATH: "/home/arm/media/completed/"
 # For Plex see https://support.plex.tv/hc/en-us/articles/200220677
 EXTRAS_SUB: "extras"
 
-# Path to installation of ARM 
+# Path to installation of ARM
 INSTALLPATH: "/opt/arm/"
 
 # Path to directory to hold log files
@@ -186,8 +186,8 @@ SET_MEDIA_PERMISSIONS: false
 CHMOD_VALUE: 777
 
 SET_MEDIA_OWNER: false
-CHOWN_USER: 
-CHOWN_GROUP: 
+CHOWN_USER:
+CHOWN_GROUP:
 
 
 ########################
@@ -240,11 +240,22 @@ DEST_EXT: mkv
 HANDBRAKE_CLI: HandBrakeCLI
 HANDBRAKE_LOCAL: HandBrakeCLI
 
+#ffmpeg binary to call these should be the same unless you are doing remote
+#processing
+FFMPEG_CLI: ffmpeg
+FFMPEG_LOCAL: ffmpeg
+
+#Use ffmpeg instead of HandBrakeCLI
+USE_FFMPEG: false
+
+#ffmpeg options to use if USE_FFMPEG is true
+FFMPEG_ARGS: ""
+
 # Have HandBrake transcode the main feature only.  BluRay discs must have RIPMETHOD="backup" for this to work.
 # If MAINFEATURE is true, blurays will be backed up to the HD and then HandBrake will go to work on the backed up
-# files.  
+# files.
 # This will require libdvdcss2 be installed.
-# NOTE: For the most part, HandBrake correctly identifies the main feature on movie DVD's, although it is not perfect. 
+# NOTE: For the most part, HandBrake correctly identifies the main feature on movie DVD's, although it is not perfect.
 # However, it does not handle tv shows well at all.  This setting is only used when the video is identified as a movie.
 MAINFEATURE: false
 
@@ -281,12 +292,12 @@ EMBY_USERNAME: ""
 EMBY_USERID: ""
 
 # This is the SHA1 encrypted password for the username above.  You can generate the SHA1 hash of your password by executing the following at
-# the command line: 
+# the command line:
 # echo -n your-password | sha1sum | awk '{print $1}'
 # or using an online generator like the one located at https://www.sha1-online.com/
 EMBY_PASSWORD: ""
 
-# Emby API key.  This can be found (generated) by going to Advanced/Security in the 
+# Emby API key.  This can be found (generated) by going to Advanced/Security in the
 # Emby dashboard
 EMBY_API_KEY: ""
 
