@@ -252,7 +252,7 @@ def get_track_info(srcpath, job):
 
     cmd = f'{cfg.arm_config["FFMPEG_LOCAL"]} -i {shlex.quote(srcpath)} -t 0 --scan'
     logging.debug(f"Sending command: {cmd}")
-    ffmpeg_output = handbrake_char_encoding(cmd)
+    ffmpeg_output = ffmpeg_char_encoding(cmd)
 
     if ffmpeg_output is not None:
         t_pattern = re.compile(r'.*\+ title *')
