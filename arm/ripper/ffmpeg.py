@@ -254,7 +254,7 @@ def get_track_info(srcpath, job):
     logging.debug(f"Sending command: {cmd}")
     ffmpeg_output = ffmpeg_char_encoding(cmd)
 
-    if ffmpeg_output is not None:
+    if ffmpeg_output is not None or ffmpeg_output != -1:
         t_pattern = re.compile(r'.*\+ title *')
         pattern = re.compile(r'.*duration:.*')
         seconds = 0
