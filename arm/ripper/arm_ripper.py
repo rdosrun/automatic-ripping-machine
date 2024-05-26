@@ -116,8 +116,8 @@ def start_transcode(job, logfile, hb_in_path, hb_out_path, protection):
             logging.info("Transcoding is disabled, skipping transcode")
             return None
         if job.config.USE_FFMPEG:
-            logging.debug(f"handbrake_ffmpeg: {hb_in_path}, {hb_out_path}, {logfile}")
-            handbrake.handbrake_ffmpeg(hb_in_path, hb_out_path, logfile, job)
+            logging.debug(f"ffmpeg: {hb_in_path}, {hb_out_path}, {logfile}")
+            ffmpeg.ffmpeg_main_feature(hb_in_path, hb_out_path, logfile, job)
         else:
             logging.debug(f"handbrake_mkv: {hb_in_path}, {hb_out_path}, {logfile}")
             handbrake.handbrake_mkv(hb_in_path, hb_out_path, logfile, job)

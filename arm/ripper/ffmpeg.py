@@ -17,7 +17,7 @@ PROCESS_COMPLETE = "FFMPEG processing complete"
 
 def ffmpeg_main_feature(srcpath, basepath, logfile, job):
     """
-    Process dvd with main_feature enabled.\n\n
+    :Process dvd with main_feature enabled.\n\n
     :param srcpath: Path to source for HB (dvd or files)\n
     :param basepath: Path where HB will save trancoded files\n
     :param logfile: Logfile for HB to redirect output to\n
