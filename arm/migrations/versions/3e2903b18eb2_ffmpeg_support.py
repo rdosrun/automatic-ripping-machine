@@ -18,9 +18,15 @@ depends_on = None
 
 def upgrade():
     op.add_column('config',
-                sa.Column('FFMPEG_CLI', sa.String(length=256), nullable=True),
-                sa.Column('FFMPEG_LOCAL', sa.String(length=256), nullable=True),
-                sa.Column('USE_FFMPEG', sa.Boolean(), nullable=True),
+                sa.Column('FFMPEG_CLI', sa.String(length=256), nullable=True)
+                  )
+    op.add_column('config',
+                sa.Column('FFMPEG_LOCAL', sa.String(length=256), nullable=True)
+                  )
+    op.add_column('config',
+                sa.Column('USE_FFMPEG', sa.Boolean(), nullable=True)
+                  )
+    op.add_column('config',
                 sa.Column('FFMPEG_ARGS', sa.String(length=512), nullable=True)
                   )
     pass
