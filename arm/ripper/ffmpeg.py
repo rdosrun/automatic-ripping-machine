@@ -133,11 +133,9 @@ def ffmpeg_all(srcpath, basepath, logfile, job):
 
             #get this to use ffmpeg
             cmd = f"nice {cfg.arm_config['FFMPEG_CLI']} " \
-                  f"-i {shlex.quote(srcpath)} " \
-                  f"-o {shlex.quote(filepathname)} " \
-                  f"--preset \"{ffmpeg_preset}\" " \
-                  f"-t {track.track_number} " \
-                  f"{ffmpeg_args} " \
+                  f"-i {shlex.quote(srcpath)+'/'+shlex.quote(filename)} " \
+                  f"{cfg.arm_config['FFMPEG_ARGS']} " \
+                  f"{shlex.quote(filepathname)+'/'+shlex.quote(filename)} " \
                   f">> {logfile} 2>&1"
 
             logging.debug(f"Sending command: {cmd}")
@@ -248,48 +246,7 @@ def get_track_info(srcpath, job):
     :param job: Job instance\n
     :return: None
     """
-    logging.info("Using ffmpeg to get information on all the tracks on the disc.  This will take a few minutes...")
-
-    cmd = f'{cfg.arm_config["FFMPEG_LOCAL"]} -i {shlex.quote(srcpath)} -t 0 --scan'
-    logging.debug(f"Sending command: {cmd}")
-    ffmpeg_output = ffmpeg_char_encoding(cmd)
-
-    if ffmpeg_output is not None or ffmpeg_output != -1:
-        t_pattern = re.compile(r'.*\+ title *')
-        pattern = re.compile(r'.*duration:.*')
-        seconds = 0
-        t_no = 0
-        fps = float(0)
-        aspect = 0
-        result = None
-        main_feature = False
-        for line in ffmpeg_output:
-
-            # get number of titles
-            if result is None:
-                # scan: DVD has 12 title(s)
-                result = re.search(r'scan: (BD|DVD) has (\d{1,3}) title\(s\)', line)
-
-                if result:
-                    titles = result.group(2).strip()
-                    logging.debug(f"Line found is: {line}")
-                    logging.info(f"Found {titles} titles")
-                    job.no_of_titles = titles
-                    db.session.commit()
-
-            main_feature, t_no = title_finder(aspect, fps, job, line, main_feature, seconds, t_no, t_pattern)
-            seconds = seconds_builder(line, pattern, seconds)
-            main_feature = is_main_feature(line, main_feature)
-
-            if (re.search(" fps", line)) is not None:
-                fps = line.rsplit(' ', 2)[-2]
-                aspect = line.rsplit(' ', 3)[-3]
-                aspect = str(aspect).replace(",", "")
-    else:
-        logging.info("ffmpeg unable to get track information")
-
-    utils.put_track(job, t_no, seconds, aspect, fps, main_feature, "ffmpeg")
-
+    return None
 
 def title_finder(aspect, fps, job, line, main_feature, seconds, t_no, t_pattern):
     """
