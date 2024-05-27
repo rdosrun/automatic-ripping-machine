@@ -1,6 +1,71 @@
-#making a one to one function clone of Handbrake
 #!/usr/bin/env python3
-"""FFMPEG processing of dvd/blu-ray"""
+"""Handbrake processing of dvd/blu-ray"""
+
+#import os
+#import subprocess
+
+
+
+#import shlex
+#import arm.config.config as cfg
+
+"""
+def ffmpeg_defualt(srcpath, basepath, logfile, job):
+    tmp = f"nice HandBrakeCLI -h"
+    subprocess.check_output(tmp, shell=True).decode("utf-8")
+    cmd = f"nice ffmpeg -h"
+    subprocess.check_output(cmd, shell=True).decode("utf-8")
+"""
+
+
+#PROCESS_COMPLETE = "Handbrake processing complete"
+""""
+things I need
+1. (cfg.arm_config) get things from the arm config
+2. get file name ( track.filename = track.orig_filename = filename
+3. set output name
+4. make this file callable
+5. call this file from main file
+
+#use this to set ffmpeg options
+ffmpeg_options: ""
+#Experimental
+use_ffmpeg: false
+
+
+def ffmpeg_defualt(srcpath, basepath, logfile, job):
+    # Added to limit number of transcodes
+    options = cfg.arm_config['FFMPEG_OPTIONS'].split(' ')
+    options = [string + " " for string in options]
+    for srcfile in os.listdir(srcpath):
+        if os.path.isfile(os.path.join(srcpath,srcfile)):
+            filename = os.path.join(basepath, job.title + "." + cfg.arm_config["DEST_EXT"])
+            filepathname = os.path.join(basepath, filename)
+            options.insert(2,os.path.join(srcpath,srcfile))
+            options.insert(2,"-i")
+            options.append(filepathname)
+            options.insert(0,"ffmpeg")
+            options = [string + " " for string in options]
+            cmd = "".join(options)
+            tmp = ['ffmpeg', '-vaapi_device', '/dev/dri/renderD128', '-i', './output .mp4', '-vf', 'format=nv12,hwupload', '-c:v', 'h264_vaapi', '-crf', '20','-y' ,'output5.mp4']
+            cmd = f"nice ffmpeg -vaapi_device /dev/dri/renderD128 -i home/arm/output\ .mp4' -vf format=nv12,hwupload -c:v h264_vaapi -crf 20 -y /home/arm/output5.mp4 " \
+                  f" "
+
+            try:
+                ffmpeg_output = subprocess.check_output(
+                    cmd,shell=True
+                ).decode("utf-8")
+                pass
+            except Exception as e:
+                print(e)
+                raise e
+
+                  """
+
+
+
+#!/usr/bin/env python3
+"""Handbrake processing of dvd/blu-ray"""
 
 import os
 import logging
@@ -12,12 +77,12 @@ import arm.config.config as cfg
 from arm.ripper import utils
 from arm.ui import app, db  # noqa E402
 
-PROCESS_COMPLETE = "FFMPEG processing complete"
+PROCESS_COMPLETE = "Handbrake processing complete"
 
 
 def ffmpeg_main_feature(srcpath, basepath, logfile, job):
     """
-    :Process dvd with main_feature enabled.\n\n
+    Process dvd with main_feature enabled.\n\n
     :param srcpath: Path to source for HB (dvd or files)\n
     :param basepath: Path where HB will save trancoded files\n
     :param logfile: Logfile for HB to redirect output to\n
@@ -25,12 +90,11 @@ def ffmpeg_main_feature(srcpath, basepath, logfile, job):
     :return: None
     """
     logging.info("Starting DVD Movie main_feature processing")
-    logging.debug("ffmpeg starting: ")
+    logging.debug("Handbrake starting: ")
     logging.debug(f"\n\r{job.pretty_table()}")
 
     utils.database_updater({'status': "waiting_transcode"}, job)
     # TODO: send a notification that jobs are waiting ?
-    #change this line to use ffmpeg
     utils.sleep_check_process("HandBrakeCLI", int(cfg.arm_config["MAX_CONCURRENT_TRANSCODES"]))
     logging.debug("Setting job status to 'transcoding'")
     utils.database_updater({'status': "transcoding"}, job)
@@ -42,37 +106,35 @@ def ffmpeg_main_feature(srcpath, basepath, logfile, job):
 
     track = job.tracks.filter_by(main_feature=True).first()
     if track is None:
-        msg = "No main feature found by ffmpeg. Turn main_feature to false in arm.yml and try again."
+        msg = "No main feature found by Handbrake. Turn main_feature to false in arm.yml and try again."
         logging.error(msg)
         raise RuntimeError(msg)
 
     track.filename = track.orig_filename = filename
     db.session.commit()
 
-    ffmpeg_args, ffmpeg_preset = correct_ffmpeg_settings(job)
-    #update this to use ffmpeg
-    cmd = f"nice {cfg.arm_config['FFMPEG_CLI']} " \
-          f"-i {shlex.quote(srcpath)} " \
-          f"-o {shlex.quote(filepathname)} " \
-          f"--main-feature " \
-          f"--preset \"{ffmpeg_preset}\" " \
-          f"{ffmpeg_args} " \
-          f">> {logfile} 2>&1"
+    options = cfg.arm_config['FFMPEG_OPTIONS'].split(' ')
+    tmp = ' '.join(map(str,options))
+    cmd = f"nice ffmpeg " \
+              f"-i {shlex.quote(srcpathname)} " \
+              f" {tmp}" \
+              f" {shlex.quote(filepathname)} " \
+              f" >> {logfile} 2>&1"
 
     logging.debug(f"Sending command: {cmd}")
 
     try:
         subprocess.check_output(cmd, shell=True).decode("utf-8")
-        logging.info("ffmpeg call successful")
+        logging.info("Handbrake call successful")
         track.status = "success"
-    except subprocess.CalledProcessError as ffmpeg_error:
-        err = f"Call to ffmpeg failed with code: {ffmpeg_error.returncode}({ffmpeg_error.output})"
+    except subprocess.CalledProcessError as hb_error:
+        err = f"Call to handbrake failed with code: {hb_error.returncode}({hb_error.output})"
         logging.error(err)
         track.status = "fail"
         track.error = job.errors = err
         job.status = "fail"
         db.session.commit()
-        raise subprocess.CalledProcessError(ffmpeg_error.returncode, cmd)
+        raise subprocess.CalledProcessError(hb_error.returncode, cmd)
 
     logging.info(PROCESS_COMPLETE)
     logging.debug(f"\n\r{job.pretty_table()}")
@@ -83,22 +145,21 @@ def ffmpeg_main_feature(srcpath, basepath, logfile, job):
 def ffmpeg_all(srcpath, basepath, logfile, job):
     """
     Process all titles on the dvd\n
-    :param srcpath: Path to source for ffmpeg (dvd or files)\n
-    :param basepath: Path where ffmpeg will save trancoded files\n
-    :param logfile: Logfile for ffmpeg to redirect output to\n
+    :param srcpath: Path to source for HB (dvd or files)\n
+    :param basepath: Path where HB will save trancoded files\n
+    :param logfile: Logfile for HB to redirect output to\n
     :param job: Disc object\n
     :return: None
     """
     # Wait until there is a spot to transcode
     job.status = "waiting_transcode"
     db.session.commit()
-    utils.sleep_check_process("ffmpeg", int(cfg.arm_config["MAX_CONCURRENT_TRANSCODES"]))
+    utils.sleep_check_process("HandBrakeCLI", int(cfg.arm_config["MAX_CONCURRENT_TRANSCODES"]))
     job.status = "transcoding"
     db.session.commit()
     logging.info("Starting BluRay/DVD transcoding - All titles")
 
-    #change this to reflect ffmpeg
-    ffmpeg_args, ffmpeg_preset = correct_ffmpeg_settings(job)
+    hb_args, hb_preset = correct_hb_settings(job)
     get_track_info(srcpath, job)
 
     logging.debug(f"Total number of tracks is {job.no_of_titles}")
@@ -130,13 +191,14 @@ def ffmpeg_all(srcpath, basepath, logfile, job):
             track.filename = track.orig_filename = filename
             db.session.commit()
 
+            options = cfg.arm_config['FFMPEG_OPTIONS'].split(' ')
+            tmp = ' '.join(map(str,options))
+            cmd = f"nice ffmpeg " \
+              f"-i {shlex.quote(srcpathname)} " \
+              f" {tmp}" \
+              f" {shlex.quote(filepathname)} " \
+              f" >> {logfile} 2>&1"
 
-            #get this to use ffmpeg
-            cmd = f"nice {cfg.arm_config['FFMPEG_CLI']} " \
-                  f"-i {shlex.quote(srcpath)+'/'+shlex.quote(filename)} " \
-                  f"{cfg.arm_config['FFMPEG_ARGS']} " \
-                  f"{shlex.quote(filepathname)+'/'+shlex.quote(filename)} " \
-                  f">> {logfile} 2>&1"
 
             logging.debug(f"Sending command: {cmd}")
 
@@ -145,16 +207,16 @@ def ffmpeg_all(srcpath, basepath, logfile, job):
                     cmd,
                     shell=True
                 ).decode("utf-8")
-                logging.debug(f"ffmpeg exit code: {hand_brake_output}")
+                logging.debug(f"Handbrake exit code: {hand_brake_output}")
                 track.status = "success"
-            except subprocess.CalledProcessError as ffmpeg_error:
-                err = f"ffmpeg encoding of title {track.track_number} failed with code: {ffmpeg_error.returncode}" \
-                      f"({ffmpeg_error.output})"
+            except subprocess.CalledProcessError as hb_error:
+                err = f"Handbrake encoding of title {track.track_number} failed with code: {hb_error.returncode}" \
+                      f"({hb_error.output})"
                 logging.error(err)
                 track.status = "fail"
                 track.error = err
                 db.session.commit()
-                raise subprocess.CalledProcessError(ffmpeg_error.returncode, cmd)
+                raise subprocess.CalledProcessError(hb_error.returncode, cmd)
 
             track.ripped = True
             db.session.commit()
@@ -163,39 +225,39 @@ def ffmpeg_all(srcpath, basepath, logfile, job):
     logging.debug(f"\n\r{job.pretty_table()}")
 
 
-def correct_ffmpeg_settings(job):
+def correct_hb_settings(job):
     """
     Get the correct custom arguments/presets for this disc
     :param job: The job
     :return: Correct preset and string arguments from A.R.M config
     """
-    ffmpeg_args = ""
-    ffmpeg_preset = ""
+    hb_args = ""
+    hb_preset = ""
     if job.disctype == "dvd":
-        ffmpeg_args = job.config.HB_ARGS_DVD
-        ffmpeg_preset = job.config.HB_PRESET_DVD
+        hb_args = job.config.HB_ARGS_DVD
+        hb_preset = job.config.HB_PRESET_DVD
     elif job.disctype == "bluray":
-        ffmpeg_args = job.config.HB_ARGS_BD
-        ffmpeg_preset = job.config.HB_PRESET_BD
-    return ffmpeg_args, ffmpeg_preset
+        hb_args = job.config.HB_ARGS_BD
+        hb_preset = job.config.HB_PRESET_BD
+    return hb_args, hb_preset
 
 
-def ffmpeg_mkv(srcpath, basepath, logfile, job):
+def ffmpeg_defualt(srcpath, basepath, logfile, job):
     """
     Process all mkv files in a directory.\n\n
-    :param srcpath: Path to source for ffmpeg (dvd or files)\n
-    :param basepath: Path where ffmpeg will save trancoded files\n
-    :param logfile: Logfile for ffmpeg to redirect output to\n
+    :param srcpath: Path to source for HB (dvd or files)\n
+    :param basepath: Path where HB will save trancoded files\n
+    :param logfile: Logfile for HB to redirect output to\n
     :param job: Disc object\n
     :return: None
     """
     # Added to limit number of transcodes
     job.status = "waiting_transcode"
     db.session.commit()
-    utils.sleep_check_process("ffmpeg", int(cfg.arm_config["MAX_CONCURRENT_TRANSCODES"]))
+    utils.sleep_check_process("HandBrakeCLI", int(cfg.arm_config["MAX_CONCURRENT_TRANSCODES"]))
     job.status = "transcoding"
     db.session.commit()
-    ffmpeg_args, ffmpeg_preset = correct_ffmpeg_settings(job)
+    hb_args, hb_preset = correct_hb_settings(job)
 
     # This will fail if the directory raw gets deleted
     for files in os.listdir(srcpath):
@@ -215,24 +277,28 @@ def ffmpeg_mkv(srcpath, basepath, logfile, job):
 
         logging.info(f"Transcoding file {shlex.quote(files)} to {shlex.quote(filepathname)}")
 
-        cmd = f'nice {cfg.arm_config["FFMPEG_CLI"]} ' \
-              f'-i {shlex.quote(srcpathname)} ' \
-              f'-o {shlex.quote(filepathname)} ' \
-              f'--preset "{ffmpeg_preset}" {ffmpeg_args} >> {logfile} 2>&1'
+        #marker
+        options = cfg.arm_config['FFMPEG_OPTIONS'].split(' ')
+        tmp = ' '.join(map(str,options))
+        cmd = f"nice ffmpeg " \
+              f"-i {shlex.quote(srcpathname)} " \
+              f" {tmp}" \
+              f" {shlex.quote(filepathname)} " \
+              f" >> {logfile} 2>&1"
 
         logging.debug(f"Sending command: {cmd}")
 
         try:
-            ffmpeg_output = subprocess.check_output(
+            hand_break_output = subprocess.check_output(
                 cmd,
                 shell=True
             ).decode("utf-8")
-            logging.debug(f"ffmpeg exit code: {ffmpeg_output}")
-        except subprocess.CalledProcessError as ffmpeg_error:
-            err = f"ffmpeg encoding of file {shlex.quote(files)} failed with code: {ffmpeg_error.returncode}" \
-                  f"({ffmpeg_error.output})"
+            logging.debug(f"Handbrake exit code: {hand_break_output}")
+        except subprocess.CalledProcessError as hb_error:
+            err = f"Handbrake encoding of file {shlex.quote(files)} failed with code: {hb_error.returncode}" \
+                  f"({hb_error.output})"
             logging.error(err)
-            raise subprocess.CalledProcessError(ffmpeg_error.returncode, cmd)
+            raise subprocess.CalledProcessError(hb_error.returncode, cmd)
             # job.errors.append(f)
 
     logging.info(PROCESS_COMPLETE)
@@ -241,12 +307,53 @@ def ffmpeg_mkv(srcpath, basepath, logfile, job):
 
 def get_track_info(srcpath, job):
     """
-    Use ffmpeg to get track info and update Track class\n\n
+    Use HandBrake to get track info and update Track class\n\n
     :param srcpath: Path to disc\n
     :param job: Job instance\n
     :return: None
     """
-    return None
+    logging.info("Using HandBrake to get information on all the tracks on the disc.  This will take a few minutes...")
+
+    cmd = f'{cfg.arm_config["HANDBRAKE_LOCAL"]} -i {shlex.quote(srcpath)} -t 0 --scan'
+    logging.debug(f"Sending command: {cmd}")
+    hand_break_output = handbrake_char_encoding(cmd)
+
+    if hand_break_output is not None:
+        t_pattern = re.compile(r'.*\+ title *')
+        pattern = re.compile(r'.*duration:.*')
+        seconds = 0
+        t_no = 0
+        fps = float(0)
+        aspect = 0
+        result = None
+        main_feature = False
+        for line in hand_break_output:
+
+            # get number of titles
+            if result is None:
+                # scan: DVD has 12 title(s)
+                result = re.search(r'scan: (BD|DVD) has (\d{1,3}) title\(s\)', line)
+
+                if result:
+                    titles = result.group(2).strip()
+                    logging.debug(f"Line found is: {line}")
+                    logging.info(f"Found {titles} titles")
+                    job.no_of_titles = titles
+                    db.session.commit()
+
+            main_feature, t_no = title_finder(aspect, fps, job, line, main_feature, seconds, t_no, t_pattern)
+            seconds = seconds_builder(line, pattern, seconds)
+            main_feature = is_main_feature(line, main_feature)
+
+            if (re.search(" fps", line)) is not None:
+                fps = line.rsplit(' ', 2)[-2]
+                aspect = line.rsplit(' ', 3)[-3]
+                aspect = str(aspect).replace(",", "")
+    else:
+        logging.info("HandBrake unable to get track information")
+
+    utils.put_track(job, t_no, seconds, aspect, fps, main_feature, "HandBrake")
+
 
 def title_finder(aspect, fps, job, line, main_feature, seconds, t_no, t_pattern):
     """
@@ -263,7 +370,7 @@ def title_finder(aspect, fps, job, line, main_feature, seconds, t_no, t_pattern)
     """
     if (re.search(t_pattern, line)) is not None:
         if t_no != 0:
-            utils.put_track(job, t_no, seconds, aspect, fps, main_feature, "ffmpeg")
+            utils.put_track(job, t_no, seconds, aspect, fps, main_feature, "HandBrake")
 
         main_feature = False
         t_no = line.rsplit(' ', 1)[-1]
@@ -274,7 +381,7 @@ def title_finder(aspect, fps, job, line, main_feature, seconds, t_no, t_pattern)
 def is_main_feature(line, main_feature):
     """
     Check if we can find 'Main Feature' in hb output line\n
-    :param str line: Line from ffmpeg output
+    :param str line: Line from HandBrake output
     :param bool main_feature:
     :return bool main_feature: Return true if we fine main feature
     """
@@ -286,7 +393,7 @@ def is_main_feature(line, main_feature):
 def seconds_builder(line, pattern, seconds):
     """
     Find the track time and convert to seconds\n
-    :param line: Line from ffmpeg output
+    :param line: Line from HandBrake output
     :param pattern: regex patter
     :param seconds:
     :return:
@@ -298,37 +405,35 @@ def seconds_builder(line, pattern, seconds):
     return seconds
 
 
-def ffmpeg_char_encoding(cmd):
+def handbrake_char_encoding(cmd):
     """
     Allows us to try multiple char encoding types\n\n
     :param cmd: CMD to push
-    :return: the output from ffmpeg or -1 if it fails
+    :return: the output from HandBrake or -1 if it fails
     """
     charset_found = False
-    ffmpeg_output = -1
+    hand_brake_output = -1
     try:
-        ffmpeg_output = subprocess.check_output(
+        hand_brake_output = subprocess.check_output(
             cmd,
             stderr=subprocess.STDOUT,
             shell=True
         ).decode('utf-8', 'ignore').splitlines()
-    except subprocess.CalledProcessError as ffmpeg_error:
+    except subprocess.CalledProcessError as hb_error:
         logging.error("Couldn't find a valid track with utf-8 encoding. Trying with cp437")
-        logging.error(f"Specific error is: {ffmpeg_error}")
+        logging.error(f"Specific error is: {hb_error}")
     else:
         charset_found = True
     if not charset_found:
         try:
-            ffmpeg_output = subprocess.check_output(
+            hand_brake_output = subprocess.check_output(
                 cmd,
                 stderr=subprocess.STDOUT,
                 shell=True
             ).decode('cp437').splitlines()
-        except subprocess.CalledProcessError as ffmpeg_error:
+        except subprocess.CalledProcessError as hb_error:
             logging.error("Couldn't find a valid track. "
                           "Try running the command manually to see more specific errors.")
-            logging.error(f"Specific error is: {ffmpeg_error}")
+            logging.error(f"Specific error is: {hb_error}")
             # If it doesn't work now we either have bad encoding or HB has ran into issues
-    return ffmpeg_output
-
-
+    return hand_brake_output
