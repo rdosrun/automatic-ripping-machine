@@ -278,7 +278,7 @@ def ffmpeg_defualt(srcpath, basepath, logfile, job):
         logging.info(f"Transcoding file {shlex.quote(files)} to {shlex.quote(filepathname)}")
 
         #marker
-        options = cfg.arm_config['FFMPEG_OPTIONS'].split(' ')
+        options = cfg.arm_config['FFMPEG_ARGS'].split(' ')
         tmp = ' '.join(map(str,options))
         cmd = f"nice ffmpeg " \
               f"-i {shlex.quote(srcpathname)} " \
