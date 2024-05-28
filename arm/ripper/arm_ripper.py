@@ -117,7 +117,7 @@ def start_transcode(job, logfile, hb_in_path, hb_out_path, protection):
             return None
         if job.config.USE_FFMPEG:
             logging.debug(f"ffmpeg: {hb_in_path}, {hb_out_path}, {logfile}")
-            ffmpeg.ffmpeg_all(hb_in_path, hb_out_path, logfile, job)
+            ffmpeg.ffmpeg_defualt(hb_in_path, hb_out_path, logfile, job)
         else:
             logging.debug(f"handbrake_mkv: {hb_in_path}, {hb_out_path}, {logfile}")
             handbrake.handbrake_mkv(hb_in_path, hb_out_path, logfile, job)
@@ -132,7 +132,7 @@ def start_transcode(job, logfile, hb_in_path, hb_out_path, protection):
     else:
         if job.config.USE_FFMPEG:
             logging.debug(f"handbrake_all_ffmpeg: {hb_in_path}, {hb_out_path}, {logfile}")
-            handbrake.ffmpeg_all(hb_in_path, hb_out_path, logfile, job)
+            handbrake.ffmpeg_defualt(hb_in_path, hb_out_path, logfile, job)
         else:
             logging.debug(f"handbrake_all: {hb_in_path}, {hb_out_path}, {logfile}")
             handbrake.handbrake_all(hb_in_path, hb_out_path, logfile, job)
