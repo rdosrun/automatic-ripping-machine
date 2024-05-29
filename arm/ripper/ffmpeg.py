@@ -98,7 +98,7 @@ def ffmpeg_main_feature(srcpath, basepath, logfile, job):
     utils.sleep_check_process("HandBrakeCLI", int(cfg.arm_config["MAX_CONCURRENT_TRANSCODES"]))
     logging.debug("Setting job status to 'transcoding'")
     utils.database_updater({'status': "transcoding"}, job)
-    filename = os.path.join(basepath, job.title + "." + cfg.arm_config["DEST_EXT"])
+    filename = os.path.join(job.title + "." + cfg.arm_config["DEST_EXT"])
     filepathname = os.path.join(basepath, filename)
     logging.info(f"Ripping title main_feature to {shlex.quote(filepathname)}")
 
@@ -124,6 +124,8 @@ def ffmpeg_main_feature(srcpath, basepath, logfile, job):
     logging.debug(f"Sending command: {cmd}")
 
     try:
+        cmd2 = f"nice mkdir -p {basepath} && chmod -R 777 {basepath}"
+        subprocess.check_output(cmd2, shell=True).decode("utf-8")
         subprocess.check_output(cmd, shell=True).decode("utf-8")
         logging.info("Handbrake call successful")
         track.status = "success"
